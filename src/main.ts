@@ -293,7 +293,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La circunferencia";
     if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})² + (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})² = ${formatNumber(r)}²`;
     if (insight) insight.textContent = "Todos los puntos se mantienen a la misma distancia del centro.";
-    renderPlot(target, { title: "Centro y radio", subtitle: `Centro (${h}, ${k}) · radio ${r}`, series: [{ points: circlePoints(h, k, r), color: accent, label: "circunferencia" }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+    renderPlot(target, { title: "Centro y radio", subtitle: `Centro (${h}, ${k}) · radio ${r}`, series: [{ points: circlePoints(h, k, r), color: accent, label: "circunferencia", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
     return;
   }
 
@@ -302,7 +302,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La parábola";
     if (formula) formula.textContent = `y = ${formatNumber(a, 2)}(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})² ${k >= 0 ? "+" : "−"} ${formatNumber(Math.abs(k))}`;
     if (insight) insight.textContent = "a controla la apertura y su signo indica si la parábola mira arriba o abajo.";
-    renderPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a, h, k), color: accent, label: "parábola" }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
+    renderPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a, h, k), color: accent, label: "parábola", connectByOrder: true }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
     return;
   }
 
@@ -311,7 +311,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La elipse";
     if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})²/${formatNumber(a)}² + (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})²/${formatNumber(b)}² = 1`;
     if (insight) insight.textContent = "Los semiejes a y b estiran la curva horizontal y verticalmente.";
-    renderPlot(target, { title: "Semiejes de la elipse", subtitle: "Observa cómo a y b modifican su contorno", series: [{ points: ellipsePoints(h, k, a, b), color: accent, label: "elipse" }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+    renderPlot(target, { title: "Semiejes de la elipse", subtitle: "Observa cómo a y b modifican su contorno", series: [{ points: ellipsePoints(h, k, a, b), color: accent, label: "elipse", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
     return;
   }
 
@@ -320,7 +320,7 @@ function renderGeometryPlot(): void {
   if (label) label.textContent = "La hipérbola";
   if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})²/${formatNumber(a)}² − (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})²/${formatNumber(b)}² = 1`;
   if (insight) insight.textContent = "Sus ramas se acercan a asíntotas sin alcanzarlas; a y b regulan su apertura.";
-  renderPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: leftUpper, color: accent, label: "rama superior" }, { points: leftLower, color: accent, label: "rama inferior" }, { points: rightUpper, color: accent }, { points: rightLower, color: accent }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+  renderPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: leftUpper, color: accent, label: "rama superior", connectByOrder: true }, { points: leftLower, color: accent, label: "rama inferior", connectByOrder: true }, { points: rightUpper, color: accent, connectByOrder: true }, { points: rightLower, color: accent, connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
 }
 
 function bindFunctions(): void {
