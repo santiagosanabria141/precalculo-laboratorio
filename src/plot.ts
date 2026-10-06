@@ -52,8 +52,8 @@ function formatTick(value: number): string {
   return Object.is(rounded, -0) ? "0" : String(rounded);
 }
 
-function valuesForAxis(min: number, max: number): { values: number[]; step: number } {
-  const step = niceTickStep(max - min);
+function valuesForAxis(min: number, max: number, sharedStep?: number): { values: number[]; step: number } {
+  const step = sharedStep ?? niceTickStep(max - min);
   const first = Math.ceil(min / step) * step;
   const values: number[] = [];
   for (let value = first; value <= max + step * 0.001 && values.length < 80; value += step) {
@@ -122,8 +122,9 @@ export function renderPlot(target: HTMLElement, options: PlotOptions): void {
   const xScale = (value: number) => padding.left + ((value - xMin) / xSpan) * plotWidth;
   const yScale = (value: number) => padding.top + ((yMax - value) / ySpan) * plotHeight;
   const inFrame = (point: Point) => point.x >= xMin && point.x <= xMax && point.y >= yMin && point.y <= yMax;
-  const xAxis = valuesForAxis(xMin, xMax);
-  const yAxis = valuesForAxis(yMin, yMax);
+  const sharedGridStep = niceTickStep(Math.max(xSpan, ySpan));
+  const xAxis = valuesForAxis(xMin, xMax, sharedGridStep);
+  const yAxis = valuesForAxis(yMin, yMax, sharedGridStep);
   const isZero = (value: number, step: number) => Math.abs(value) < step * 0.001;
 
   const xGrid = xAxis.values

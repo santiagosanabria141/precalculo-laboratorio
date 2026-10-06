@@ -39,6 +39,7 @@ const state = {
 };
 
 let plotZoom = 1;
+let hasEntered = false;
 
 function drawPlot(target: HTMLElement, options: PlotOptions): void {
   renderPlot(target, {
@@ -87,6 +88,10 @@ const algebraLessons = {
 };
 
 function renderApp(): void {
+  if (!hasEntered) {
+    renderCover();
+    return;
+  }
   app!.innerHTML = `
     <div class="cosmic-backdrop" aria-hidden="true"></div>
     <div class="app-shell">
@@ -124,6 +129,29 @@ function renderApp(): void {
   if (state.active === "algebra") bindAlgebra();
   if (state.active === "geometry") bindGeometry();
   if (state.active === "functions") bindFunctions();
+}
+
+function renderCover(): void {
+  app!.innerHTML = `
+    <div class="cover-screen">
+      <div class="cosmic-backdrop" aria-hidden="true"></div>
+      <div class="cover-orbit cover-orbit-one"></div><div class="cover-orbit cover-orbit-two"></div>
+      <main class="cover-content" id="inicio">
+        <div class="cover-brand"><span class="brand-orbit"><i>∿</i></span><span><strong>PreCálculo</strong><small>laboratorio visual</small></span></div>
+        <p class="eyebrow">CUADERNO DIGITAL · RUTA DE EXPLORACIÓN</p>
+        <h1>Entiende las matemáticas<br /><em>cuando puedes verlas.</em></h1>
+        <p class="cover-intro">Un espacio interactivo para estudiar álgebra, geometría analítica y funciones con gráficas que responden a cada cambio.</p>
+        <div class="cover-modules" aria-label="Módulos disponibles">
+          <span><b>01</b> Álgebra</span><span><b>02</b> Geometría analítica</span><span><b>03</b> Funciones</span>
+        </div>
+        <button class="cover-enter" id="enter-lab" type="button">Entrar al laboratorio <span>↗</span></button>
+        <p class="cover-note">Explora a tu ritmo · modifica · observa · comprende</p>
+      </main>
+    </div>`;
+  document.querySelector<HTMLButtonElement>("#enter-lab")?.addEventListener("click", () => {
+    hasEntered = true;
+    renderApp();
+  });
 }
 
 function hero(kicker: string, title: string, accent: string, description: string, badge: string): string {
