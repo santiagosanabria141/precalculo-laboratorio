@@ -18,12 +18,14 @@ import { renderPlot } from "./plot";
 
 type Section = "algebra" | "geometry" | "functions";
 type GeometryMode = "points" | "line" | "circle" | "parabola" | "ellipse" | "hyperbola";
+type AlgebraMode = keyof typeof algebraLessons;
 
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("No se encontró el contenedor de la aplicación.");
 
 const state = {
   active: "algebra" as Section,
+  algebraMode: "factorizacion" as AlgebraMode,
   geometryMode: "points" as GeometryMode,
   expression: "x^2 - 4",
   showInverse: true,
@@ -58,9 +60,9 @@ const algebraLessons = {
   },
   racionalizacion: {
     title: "Racionalización de un denominador",
-    formula: "1 / (√x + 1) · (√x − 1)/(√x − 1) = (√x − 1)/(x − 1)",
+    formula: "1 / (√x − 1) · (√x + 1)/(√x + 1) = (√x + 1)/(x − 1), con x ≥ 0 y x ≠ 1",
     prompt: "El conjugado cambia el signo entre los dos términos.",
-    steps: ["Identifica el binomio √x + 1.", "Multiplica arriba y abajo por su conjugado √x − 1.", "Usa (a + b)(a − b) = a² − b²."],
+    steps: ["Identifica el binomio √x − 1 y su restricción x ≠ 1.", "Multiplica arriba y abajo por su conjugado √x + 1.", "Usa (a − b)(a + b) = a² − b²."],
   },
   exponentes: {
     title: "Propiedades de exponentes",
@@ -106,6 +108,7 @@ function renderApp(): void {
     </div>`;
 
   bindNavigation();
+  setText("#tutor-response", state.tutorResponse);
   bindTutor();
   if (state.active === "algebra") bindAlgebra();
   if (state.active === "geometry") bindGeometry();
@@ -120,20 +123,21 @@ function hero(kicker: string, title: string, accent: string, description: string
 }
 
 function algebraView(): string {
+  const lesson = algebraLessons[state.algebraMode];
   return `${hero("MÓDULO 01", "El álgebra es", "una caja de herramientas.", "No memorices pasos aislados: identifica la estructura y elige la herramienta que la transforma.", "4 técnicas")}
     <section class="concept-strip" aria-label="Temas de álgebra">
-      <button class="concept-chip is-selected" data-algebra="operaciones">Expresiones</button>
-      <button class="concept-chip" data-algebra="factorizacion">Factorización</button>
-      <button class="concept-chip" data-algebra="racionalizacion">Racionalización</button>
-      <button class="concept-chip" data-algebra="exponentes">Exponentes</button>
+      <button class="concept-chip ${state.algebraMode === "operaciones" ? "is-selected" : ""}" data-algebra="operaciones">Expresiones</button>
+      <button class="concept-chip ${state.algebraMode === "factorizacion" ? "is-selected" : ""}" data-algebra="factorizacion">Factorización</button>
+      <button class="concept-chip ${state.algebraMode === "racionalizacion" ? "is-selected" : ""}" data-algebra="racionalizacion">Racionalización</button>
+      <button class="concept-chip ${state.algebraMode === "exponentes" ? "is-selected" : ""}" data-algebra="exponentes">Exponentes</button>
     </section>
     <section class="algebra-lab">
       <div class="lesson-card glow-card">
         <div class="card-kicker"><span>CUADERNO DE PASOS</span><span class="status-live">● en foco</span></div>
-        <h2 id="algebra-title">${algebraLessons.factorizacion.title}</h2>
-        <div class="big-formula" id="algebra-formula">${algebraLessons.factorizacion.formula}</div>
-        <p class="lesson-prompt" id="algebra-prompt">${algebraLessons.factorizacion.prompt}</p>
-        <ol class="lesson-steps" id="algebra-steps">${algebraLessons.factorizacion.steps.map((step) => `<li>${step}</li>`).join("")}</ol>
+        <h2 id="algebra-title">${lesson.title}</h2>
+        <div class="big-formula" id="algebra-formula">${lesson.formula}</div>
+        <p class="lesson-prompt" id="algebra-prompt">${lesson.prompt}</p>
+        <ol class="lesson-steps" id="algebra-steps">${lesson.steps.map((step) => `<li>${step}</li>`).join("")}</ol>
         <div class="formula-footer"><span>Consejo de laboratorio</span><span>Comprueba siempre sustituyendo un valor.</span></div>
       </div>
       <aside class="algebra-reference">
@@ -163,7 +167,7 @@ function functionsView(): string {
   return `${hero("MÓDULO 03", "Una regla cobra vida", "cuando la puedes ver.", "Escribe una función, identifica qué x son posibles y comprueba si puede deshacerse con una inversa.", "Graficador")}
     <section class="function-toolbar">
       <form class="expression-form" id="expression-form">
-        <label for="expression">f(x) =</label><input id="expression" autocomplete="off" value="${state.expression}" aria-label="Expresión de la función" />
+        <label for="expression">f(x) =</label><input id="expression" autocomplete="off" aria-label="Expresión de la función" />
         <button class="primary-button" type="submit">Graficar <span>↗</span></button>
       </form>
       <div class="preset-row"><span>Prueba:</span><button data-preset="x^2 - 4">cuadrática</button><button data-preset="2*x - 3">lineal</button><button data-preset="sqrt(x)">raíz</button><button data-preset="sin(x)">seno</button><button data-preset="1/x">racional</button></div>
@@ -172,8 +176,8 @@ function functionsView(): string {
       <div class="graph-panel function-graph"><div id="function-plot"></div></div>
       <aside class="function-inspector">
         <div class="inspector-header"><p class="eyebrow">LECTURA DE LA FUNCIÓN</p><label class="toggle"><input id="inverse-toggle" type="checkbox" ${state.showInverse ? "checked" : ""}/><span></span> ver inversa</label></div>
-        <div class="metric-card"><span>DOMINIO DETECTADO</span><strong id="domain-value">—</strong><p>Valores de x con puntos reales en la ventana.</p></div>
-        <div class="metric-card"><span>RANGO ESTIMADO</span><strong id="range-value">—</strong><p>Valores de y visibles en el plano actual.</p></div>
+        <div class="metric-card"><span>DOMINIO · VENTANA</span><strong id="domain-value">—</strong><p>Valores de x detectados entre −10 y 10.</p></div>
+        <div class="metric-card"><span>RANGO · VENTANA</span><strong id="range-value">—</strong><p>Valores de y visibles en el plano actual.</p></div>
         <div class="inverse-card" id="inverse-card"></div>
         <div class="input-guide"><strong>Sintaxis útil</strong><p>Usa <code>x^2</code>, <code>sqrt(x)</code>, <code>sin(x)</code>, <code>abs(x)</code> y <code>pi</code>.</p></div>
       </aside>
@@ -183,7 +187,7 @@ function functionsView(): string {
 function tutorView(): string {
   const topic = sectionMeta[state.active].label;
   return `<aside class="tutor-dock" id="tutor-dock">
-    <div class="tutor-mark">✦</div><div class="tutor-copy"><p><strong>Tutor contextual</strong><span> · ${topic}</span></p><div class="tutor-response" id="tutor-response">${state.tutorResponse}</div></div>
+    <div class="tutor-mark">✦</div><div class="tutor-copy"><p><strong>Tutor contextual</strong><span> · ${topic}</span></p><div class="tutor-response" id="tutor-response"></div></div>
     <form id="tutor-form"><input id="tutor-input" placeholder="Escribe una duda…" aria-label="Pregunta para el tutor"/><button type="submit" aria-label="Enviar pregunta">↑</button></form>
     <div class="tutor-suggestions"><button data-tutor-question="Dame una pista">Pista</button><button data-tutor-question="¿Cómo identifico el dominio?">Dominio</button><button data-tutor-question="¿Por qué no existe la inversa?">Inversa</button></div>
   </aside>`;
@@ -193,6 +197,7 @@ function bindNavigation(): void {
   document.querySelectorAll<HTMLButtonElement>("[data-section]").forEach((button) => {
     button.addEventListener("click", () => {
       state.active = button.dataset.section as Section;
+      state.tutorResponse = `Ahora estás en ${sectionMeta[state.active].label}. Describe lo que observas y te daré una pista para empezar.`;
       renderApp();
     });
   });
@@ -206,6 +211,7 @@ function bindAlgebra(): void {
     button.addEventListener("click", () => {
       const key = button.dataset.algebra as keyof typeof algebraLessons;
       const lesson = algebraLessons[key];
+      state.algebraMode = key;
       document.querySelectorAll("[data-algebra]").forEach((item) => item.classList.remove("is-selected"));
       button.classList.add("is-selected");
       setText("#algebra-title", lesson.title);
@@ -252,8 +258,13 @@ function renderGeometryLab(): void {
 
   document.querySelectorAll<HTMLInputElement>("[data-geo-key]").forEach((input) => {
     input.addEventListener("input", () => {
-      setNestedState(input.dataset.geoKey ?? "", Number(input.value));
-      setText(`#value-${input.dataset.geoKey}`, formatNumber(Number(input.value), 2));
+      let nextValue = Number(input.value);
+      if (input.dataset.geoKey === "parabola.a" && Math.abs(nextValue) < 0.001) {
+        nextValue = 0.15;
+        input.value = String(nextValue);
+      }
+      setNestedState(input.dataset.geoKey ?? "", nextValue);
+      setText(`#value-${input.dataset.geoKey}`, formatNumber(nextValue, 2));
       renderGeometryPlot();
     });
   });
@@ -310,7 +321,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La parábola";
     if (formula) formula.textContent = `y = ${formatNumber(a, 2)}(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})² ${k >= 0 ? "+" : "−"} ${formatNumber(Math.abs(k))}`;
     if (insight) insight.textContent = "a controla la apertura y su signo indica si la parábola mira arriba o abajo.";
-    renderPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a === 0 ? 0.15 : a, h, k), color: accent, label: "parábola" }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
+    renderPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a, h, k), color: accent, label: "parábola" }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
     return;
   }
 
@@ -324,14 +335,16 @@ function renderGeometryPlot(): void {
   }
 
   const { h, k, a, b } = state.hyperbola;
-  const [left, right] = hyperbolaBranches(h, k, a, b);
+  const [leftUpper, leftLower, rightUpper, rightLower] = hyperbolaBranches(h, k, a, b);
   if (label) label.textContent = "La hipérbola";
   if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})²/${formatNumber(a)}² − (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})²/${formatNumber(b)}² = 1`;
   if (insight) insight.textContent = "Sus ramas se acercan a asíntotas sin alcanzarlas; a y b regulan su apertura.";
-  renderPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: left, color: accent, label: "rama izquierda" }, { points: right, color: accent, label: "rama derecha" }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+  renderPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: leftUpper, color: accent, label: "rama superior" }, { points: leftLower, color: accent, label: "rama inferior" }, { points: rightUpper, color: accent }, { points: rightLower, color: accent }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
 }
 
 function bindFunctions(): void {
+  const expressionField = document.querySelector<HTMLInputElement>("#expression");
+  if (expressionField) expressionField.value = state.expression;
   document.querySelector<HTMLFormElement>("#expression-form")?.addEventListener("submit", (event) => {
     event.preventDefault();
     const field = document.querySelector<HTMLInputElement>("#expression");
@@ -374,7 +387,7 @@ function renderFunctionPlot(): void {
     renderPlot(target, { title: "Exploración de f(x)", subtitle: `f(x) = ${state.expression}`, series, diagonal: state.showInverse && inverse.available });
 
     inverseCard.innerHTML = inverse.available
-      ? `<span class="inverse-status success">● Inversa disponible</span><strong>f⁻¹(x): intercambio x ↔ y</strong><p>Dominio de f⁻¹: ${formatRange(sample.visibleRange)} · Rango de f⁻¹: ${formatIntervals(sample.domainIntervals)}.</p>`
+      ? `<span class="inverse-status success">● Inversa disponible</span><strong>Inversa numérica estimada</strong><p>Dominio de f⁻¹: ${formatRange(sample.visibleRange)} · Rango de f⁻¹: ${formatIntervals(sample.domainIntervals)}.</p>`
       : `<span class="inverse-status warning">▲ Revisa la restricción</span><strong>La inversa no es función en esta ventana</strong><p>${inverse.message}</p>`;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Ocurrió un error al evaluar la función.";

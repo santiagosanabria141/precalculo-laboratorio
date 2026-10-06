@@ -89,6 +89,7 @@ export function sampleFunction(
   const step = (xMax - xMin) / samples;
   let intervalStart: number | null = null;
   let previousX: number | null = null;
+  let previousValid: Point | null = null;
 
   for (let index = 0; index <= samples; index += 1) {
     const x = xMin + index * step;
@@ -96,14 +97,26 @@ export function sampleFunction(
     const isValid = Number.isFinite(y) && Math.abs(y) < 1_000_000;
 
     if (isValid) {
-      allPoints.push({ x, y });
+      const current = { x, y };
+      const discontinuity = previousValid !== null
+        && Math.sign(y) !== Math.sign(previousValid.y)
+        && Math.abs(y - previousValid.y) > 40;
+      if (discontinuity && intervalStart !== null && previousX !== null) {
+        intervals.push([intervalStart, previousX]);
+        intervalStart = x;
+        allPoints.push({ x: Number.NaN, y: Number.NaN });
+      }
+      allPoints.push(current);
       if (intervalStart === null) intervalStart = x;
       previousX = x;
+      previousValid = current;
       if (y >= yMin && y <= yMax) visiblePoints.push({ x, y });
     } else if (intervalStart !== null && previousX !== null) {
       intervals.push([intervalStart, previousX]);
       intervalStart = null;
       previousX = null;
+      if (previousValid !== null) allPoints.push({ x: Number.NaN, y: Number.NaN });
+      previousValid = null;
     }
   }
 
@@ -118,18 +131,21 @@ export function sampleFunction(
 }
 
 export function determineInverse(points: Point[], domainIntervals: Array<[number, number]>): InverseResult {
-  if (points.length < 3) {
+  const validPoints = points.filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (validPoints.length < 3) {
     return { available: false, points: [], message: "No hay suficientes puntos válidos para estimar una inversa." };
   }
 
   let direction = 0;
   let directionChanges = 0;
-  let previous = points[0];
+  let previous: Point | null = null;
 
-  for (let index = 1; index < points.length; index += 1) {
-    const current = points[index];
-    const xGap = current.x - previous.x;
-    if (xGap > 0.12) {
+  for (const current of points) {
+    if (!Number.isFinite(current.x) || !Number.isFinite(current.y)) {
+      previous = null;
+      continue;
+    }
+    if (previous === null) {
       previous = current;
       continue;
     }
@@ -161,7 +177,7 @@ export function formatIntervals(intervals: Array<[number, number]>): string {
   if (!intervals.length) return "sin valores reales en esta ventana";
   if (intervals.length > 3) return "varios intervalos dentro de la ventana";
   return intervals
-    .map(([start, end]) => `[${formatNumber(start, 1)}, ${formatNumber(end, 1)}]`)
+    .map(([start, end], index) => `${index === 0 ? "[" : "("}${formatNumber(start, 1)}, ${formatNumber(end, 1)}${index === intervals.length - 1 ? "]" : ")"}`)
     .join(" ∪ ");
 }
 
@@ -202,15 +218,15 @@ export function ellipsePoints(h: number, k: number, a: number, b: number): Point
   });
 }
 
-export function hyperbolaBranches(h: number, k: number, a: number, b: number): [Point[], Point[]] {
-  const branch = (direction: -1 | 1): Point[] => {
+export function hyperbolaBranches(h: number, k: number, a: number, b: number): [Point[], Point[], Point[], Point[]] {
+  const branch = (direction: -1 | 1, vertical: -1 | 1): Point[] => {
     const points: Point[] = [];
     for (let value = a; value <= 11; value += 0.035) {
       const x = h + direction * value;
       const yOffset = b * Math.sqrt((value * value) / (a * a) - 1);
-      points.push({ x, y: k + yOffset }, { x, y: k - yOffset });
+      points.push({ x, y: k + vertical * yOffset });
     }
     return points;
   };
-  return [branch(-1), branch(1)];
+  return [branch(-1, 1), branch(-1, -1), branch(1, 1), branch(1, -1)];
 }
