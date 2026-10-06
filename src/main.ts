@@ -87,6 +87,15 @@ const algebraLessons = {
   },
 };
 
+const factorCases = [
+  { id: "factor-comun", title: "Factor común", pattern: "ax + ay = a(x + y)", example: "6x + 9 = 3(2x + 3)", guide: "Extrae el máximo factor que aparece en todos los términos." },
+  { id: "agrupacion", title: "Agrupación de términos", pattern: "ax + ay + bx + by", example: "x² + 3x + 2x + 6 = (x + 3)(x + 2)", guide: "Agrupa términos de dos en dos y busca un factor común en cada grupo." },
+  { id: "tcp", title: "Trinomio cuadrado perfecto", pattern: "a² ± 2ab + b² = (a ± b)²", example: "x² + 6x + 9 = (x + 3)²", guide: "Comprueba que el primero y el último sean cuadrados y que el término central sea ±2ab." },
+  { id: "diferencia-cuadrados", title: "Diferencia de cuadrados", pattern: "a² − b² = (a − b)(a + b)", example: "x² − 25 = (x − 5)(x + 5)", guide: "Identifica dos cuadrados perfectos unidos por una resta." },
+  { id: "trinomio-x2", title: "Trinomio x² + bx + c", pattern: "x² + bx + c = (x + m)(x + n)", example: "x² + 5x + 6 = (x + 2)(x + 3)", guide: "Busca dos números que sumen b y multipliquen c." },
+  { id: "trinomio-ax2", title: "Trinomio ax² + bx + c", pattern: "ax² + bx + c", example: "6x² + 11x + 3 = (3x + 1)(2x + 3)", guide: "Multiplica a·c, descompón el término central y agrupa para factorizar." },
+];
+
 function renderApp(): void {
   if (!hasEntered) {
     renderCover();
@@ -169,6 +178,7 @@ function algebraView(): string {
       <button class="concept-chip ${state.algebraMode === "factorizacion" ? "is-selected" : ""}" data-algebra="factorizacion">Factorización</button>
       <button class="concept-chip ${state.algebraMode === "racionalizacion" ? "is-selected" : ""}" data-algebra="racionalizacion">Racionalización</button>
       <button class="concept-chip ${state.algebraMode === "exponentes" ? "is-selected" : ""}" data-algebra="exponentes">Exponentes</button>
+      <button class="concept-chip" data-scroll-algebra-workshop>Taller libre ↓</button>
     </section>
     <section class="algebra-lab">
       <div class="lesson-card glow-card">
@@ -186,6 +196,22 @@ function algebraView(): string {
         <div class="reference-item"><span>(aᵐ)ⁿ = aᵐⁿ</span><p>Potencia de potencia</p></div>
         <div class="rule-note"><strong>Pregunta guía</strong><p>¿Qué patrón puedes nombrar antes de operar?</p></div>
       </aside>
+    </section>
+    <section class="algebra-workshop" id="algebra-workshop">
+      <div class="workshop-card">
+        <div class="workshop-heading"><div><p class="eyebrow">TALLER LIBRE</p><h2>Plantea tu propio ejercicio</h2></div><span class="status-live">● práctica activa</span></div>
+        <p class="workshop-intro">Escribe una operación o una expresión que quieras factorizar. La guía te devolverá una ruta de trabajo para que desarrolles el procedimiento.</p>
+        <form id="algebra-practice-form" class="practice-form">
+          <label><span>TIPO DE EJERCICIO</span><select id="algebra-practice-kind"><option value="operacion">Operación / expresión</option><option value="factorizacion">Factorización</option></select></label>
+          <label class="practice-expression"><span>MI PLANTEAMIENTO</span><input id="algebra-practice-input" autocomplete="off" placeholder="Ej.: 3(2x − 1) + 4x" /></label>
+          <button class="primary-button practice-submit" type="submit">Revisar <span>↗</span></button>
+        </form>
+        <div class="practice-response" id="algebra-practice-response" aria-live="polite">Escribe tu planteamiento y elige una ruta para comenzar.</div>
+      </div>
+      <div class="factor-case-panel">
+        <div class="workshop-heading"><div><p class="eyebrow">GUÍA DE FACTORIZACIÓN</p><h2>Seis patrones para reconocer</h2></div></div>
+        <div class="factor-case-grid">${factorCases.map((item, index) => `<button class="factor-case-item" type="button" data-factor-case="${item.id}"><span class="factor-case-number">0${index + 1}</span><strong>${item.title}</strong><code>${item.pattern}</code><small>${item.example}</small></button>`).join("")}</div>
+      </div>
     </section>`;
 }
 
@@ -247,6 +273,38 @@ function bindAlgebra(): void {
       if (steps) steps.innerHTML = lesson.steps.map((step) => `<li>${step}</li>`).join("");
     });
   });
+  document.querySelector<HTMLButtonElement>("[data-scroll-algebra-workshop]")?.addEventListener("click", () => {
+    document.querySelector("#algebra-workshop")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  const practiceKind = document.querySelector<HTMLSelectElement>("#algebra-practice-kind");
+  const practiceInput = document.querySelector<HTMLInputElement>("#algebra-practice-input");
+  const practiceResponse = document.querySelector<HTMLElement>("#algebra-practice-response");
+  document.querySelector<HTMLFormElement>("#algebra-practice-form")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const expression = practiceInput?.value.trim() ?? "";
+    const selectedCase = document.querySelector<HTMLButtonElement>(".factor-case-item.is-selected")?.dataset.factorCase;
+    if (practiceResponse) practiceResponse.textContent = algebraPracticeFeedback(practiceKind?.value ?? "operacion", expression, selectedCase);
+  });
+  document.querySelectorAll<HTMLButtonElement>("[data-factor-case]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const selected = factorCases.find((item) => item.id === button.dataset.factorCase);
+      if (!selected) return;
+      document.querySelectorAll(".factor-case-item").forEach((item) => item.classList.remove("is-selected"));
+      button.classList.add("is-selected");
+      if (practiceKind) practiceKind.value = "factorizacion";
+      if (practiceInput) practiceInput.value = selected.example.split(" = ")[0];
+      if (practiceResponse) practiceResponse.textContent = `${selected.title}: ${selected.guide} Ejemplo de referencia: ${selected.example}. Ahora intenta escribir tu propia expresión.`;
+    });
+  });
+}
+
+function algebraPracticeFeedback(kind: string, expression: string, caseId?: string): string {
+  if (!expression) return "Primero escribe una expresión para que podamos trabajarla juntos.";
+  if (kind === "factorizacion") {
+    const selected = factorCases.find((item) => item.id === caseId) ?? factorCases[0];
+    return `${selected.title}: ${selected.guide} Tu planteamiento «${expression}» queda listo para que identifiques términos, agrupes y compruebes multiplicando los factores.`;
+  }
+  return `Operación recibida: «${expression}». Ruta sugerida: elimina paréntesis, respeta la jerarquía de operaciones, combina términos semejantes y comprueba el resultado sustituyendo un valor sencillo.`;
 }
 
 function bindGeometry(): void {
