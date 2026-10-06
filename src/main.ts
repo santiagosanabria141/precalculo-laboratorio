@@ -14,7 +14,7 @@ import {
   sampleFunction,
   type Point,
 } from "./math";
-import { renderPlot } from "./plot";
+import { renderPlot, type PlotOptions } from "./plot";
 
 type Section = "algebra" | "geometry" | "functions";
 type GeometryMode = "points" | "line" | "circle" | "parabola" | "ellipse" | "hyperbola";
@@ -37,6 +37,21 @@ const state = {
   ellipse: { h: 0, k: 0, a: 6, b: 3 },
   hyperbola: { h: 0, k: 0, a: 3, b: 2 },
 };
+
+let plotZoom = 1;
+
+function drawPlot(target: HTMLElement, options: PlotOptions): void {
+  renderPlot(target, {
+    ...options,
+    autoFrame: options.autoFrame ?? state.active === "geometry",
+    zoom: plotZoom,
+    onZoomChange: (nextZoom) => {
+      plotZoom = nextZoom;
+      if (state.active === "geometry") renderGeometryPlot();
+      if (state.active === "functions") renderFunctionPlot();
+    },
+  });
+}
 
 const sectionMeta: Record<Section, { number: string; label: string; description: string; icon: string }> = {
   algebra: { number: "01", label: "Álgebra", description: "Manipula símbolos con intención", icon: "∑" },
@@ -275,7 +290,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "Distancia entre dos puntos";
     if (formula) formula.textContent = `d = √((${state.pointB.x} − ${state.pointA.x})² + (${state.pointB.y} − ${state.pointA.y})²) = ${formatNumber(distance, 2)}`;
     if (insight) insight.textContent = "La distancia es la hipotenusa formada por los cambios horizontal y vertical.";
-    renderPlot(target, { title: "Dos puntos, una distancia", subtitle: `Δx = ${state.pointB.x - state.pointA.x} · Δy = ${state.pointB.y - state.pointA.y}`, series: [{ points: [state.pointA, state.pointB], color: "#9a8cff", label: "segmento", width: 2.5 }], markers: [{ ...state.pointA, label: `A(${state.pointA.x}, ${state.pointA.y})`, color: "#ffca6b" }, { ...state.pointB, label: `B(${state.pointB.x}, ${state.pointB.y})`, color: accent }] });
+    drawPlot(target, { title: "Dos puntos, una distancia", subtitle: `Δx = ${state.pointB.x - state.pointA.x} · Δy = ${state.pointB.y - state.pointA.y}`, series: [{ points: [state.pointA, state.pointB], color: "#9a8cff", label: "segmento", width: 2.5 }], markers: [{ ...state.pointA, label: `A(${state.pointA.x}, ${state.pointA.y})`, color: "#ffca6b" }, { ...state.pointB, label: `B(${state.pointB.x}, ${state.pointB.y})`, color: accent }] });
     return;
   }
 
@@ -284,7 +299,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La recta";
     if (formula) formula.textContent = `y = ${formatNumber(m, 2)}x ${b >= 0 ? "+" : "−"} ${formatNumber(Math.abs(b), 2)}`;
     if (insight) insight.textContent = "m controla la inclinación; b decide dónde la recta cruza al eje y.";
-    renderPlot(target, { title: "Pendiente e intersección", subtitle: "Mueve m y b para explorar", series: [{ points: linePoints(m, b), color: accent, label: "y = mx + b" }] });
+    drawPlot(target, { title: "Pendiente e intersección", subtitle: "Mueve m y b para explorar", series: [{ points: linePoints(m, b), color: accent, label: "y = mx + b" }] });
     return;
   }
 
@@ -293,7 +308,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La circunferencia";
     if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})² + (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})² = ${formatNumber(r)}²`;
     if (insight) insight.textContent = "Todos los puntos se mantienen a la misma distancia del centro.";
-    renderPlot(target, { title: "Centro y radio", subtitle: `Centro (${h}, ${k}) · radio ${r}`, series: [{ points: circlePoints(h, k, r), color: accent, label: "circunferencia", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+    drawPlot(target, { title: "Centro y radio", subtitle: `Centro (${h}, ${k}) · radio ${r}`, series: [{ points: circlePoints(h, k, r), color: accent, label: "circunferencia", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
     return;
   }
 
@@ -302,7 +317,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La parábola";
     if (formula) formula.textContent = `y = ${formatNumber(a, 2)}(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})² ${k >= 0 ? "+" : "−"} ${formatNumber(Math.abs(k))}`;
     if (insight) insight.textContent = "a controla la apertura y su signo indica si la parábola mira arriba o abajo.";
-    renderPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a, h, k), color: accent, label: "parábola", connectByOrder: true }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
+    drawPlot(target, { title: "Vértice y apertura", subtitle: "Forma de vértice y = a(x − h)² + k", series: [{ points: parabolaPoints(a, h, k), color: accent, label: "parábola", connectByOrder: true }], markers: [{ x: h, y: k, label: "vértice", color: "#ffca6b" }] });
     return;
   }
 
@@ -311,7 +326,7 @@ function renderGeometryPlot(): void {
     if (label) label.textContent = "La elipse";
     if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})²/${formatNumber(a)}² + (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})²/${formatNumber(b)}² = 1`;
     if (insight) insight.textContent = "Los semiejes a y b estiran la curva horizontal y verticalmente.";
-    renderPlot(target, { title: "Semiejes de la elipse", subtitle: "Observa cómo a y b modifican su contorno", series: [{ points: ellipsePoints(h, k, a, b), color: accent, label: "elipse", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+    drawPlot(target, { title: "Semiejes de la elipse", subtitle: "Observa cómo a y b modifican su contorno", series: [{ points: ellipsePoints(h, k, a, b), color: accent, label: "elipse", connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
     return;
   }
 
@@ -320,7 +335,7 @@ function renderGeometryPlot(): void {
   if (label) label.textContent = "La hipérbola";
   if (formula) formula.textContent = `(x ${h >= 0 ? "−" : "+"} ${formatNumber(Math.abs(h))})²/${formatNumber(a)}² − (y ${k >= 0 ? "−" : "+"} ${formatNumber(Math.abs(k))})²/${formatNumber(b)}² = 1`;
   if (insight) insight.textContent = "Sus ramas se acercan a asíntotas sin alcanzarlas; a y b regulan su apertura.";
-  renderPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: leftUpper, color: accent, label: "rama superior", connectByOrder: true }, { points: leftLower, color: accent, label: "rama inferior", connectByOrder: true }, { points: rightUpper, color: accent, connectByOrder: true }, { points: rightLower, color: accent, connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
+  drawPlot(target, { title: "Ramas y asíntotas", subtitle: "Forma horizontal de una hipérbola", series: [{ points: leftUpper, color: accent, label: "rama superior", connectByOrder: true }, { points: leftLower, color: accent, label: "rama inferior", connectByOrder: true }, { points: rightUpper, color: accent, connectByOrder: true }, { points: rightLower, color: accent, connectByOrder: true }], markers: [{ x: h, y: k, label: "centro", color: "#ffca6b" }] });
 }
 
 function bindFunctions(): void {
@@ -365,7 +380,7 @@ function renderFunctionPlot(): void {
       { points: sample.points, color: "#4de2c5", label: `f(x) = ${state.expression}` },
     ];
     if (state.showInverse && inverse.available) series.push({ points: inverse.points, color: "#9a8cff", label: "f⁻¹(x)", dashed: true });
-    renderPlot(target, { title: "Exploración de f(x)", subtitle: `f(x) = ${state.expression}`, series, diagonal: state.showInverse && inverse.available });
+    drawPlot(target, { title: "Exploración de f(x)", subtitle: `f(x) = ${state.expression}`, series, diagonal: state.showInverse && inverse.available, autoFrame: false });
 
     inverseCard.innerHTML = inverse.available
       ? `<span class="inverse-status success">● Inversa disponible</span><strong>Inversa numérica estimada</strong><p>Dominio de f⁻¹: ${formatRange(sample.visibleRange)} · Rango de f⁻¹: ${formatIntervals(sample.domainIntervals)}.</p>`
@@ -375,7 +390,7 @@ function renderFunctionPlot(): void {
     domain.textContent = "—";
     range.textContent = "—";
     inverseCard.innerHTML = `<span class="inverse-status warning">▲ Ajusta la expresión</span><strong>No se pudo graficar</strong><p>${message}</p>`;
-    renderPlot(target, { title: "Espera una expresión válida", subtitle: message });
+    drawPlot(target, { title: "Espera una expresión válida", subtitle: message, autoFrame: false });
   }
 }
 
