@@ -29,7 +29,6 @@ const state = {
   geometryMode: "points" as GeometryMode,
   expression: "x^2 - 4",
   showInverse: true,
-  tutorResponse: "Estoy listo para darte una pista. Elige una pregunta o escribe la tuya.",
   pointA: { x: -4, y: 1 },
   pointB: { x: 3, y: 5 },
   line: { m: 1.5, b: -1 },
@@ -96,20 +95,17 @@ function renderApp(): void {
       <div class="main-column">
         <header class="topbar" id="inicio">
           <div class="crumb"><span class="signal-dot"></span> PRE-CÁLCULO / ${sectionMeta[state.active].label.toUpperCase()}</div>
-          <div class="topbar-actions"><span class="progress-chip">3 módulos conectados</span><button class="help-button" data-focus-tutor aria-label="Abrir tutor contextual">? <span>Tutor</span></button></div>
+          <div class="topbar-actions"><span class="progress-chip">3 módulos conectados</span><span class="agent-chip">Jotform Agent conectado</span></div>
         </header>
         <main class="content-area">
           ${state.active === "algebra" ? algebraView() : ""}
           ${state.active === "geometry" ? geometryView() : ""}
           ${state.active === "functions" ? functionsView() : ""}
         </main>
-        ${tutorView()}
       </div>
     </div>`;
 
   bindNavigation();
-  setText("#tutor-response", state.tutorResponse);
-  bindTutor();
   if (state.active === "algebra") bindAlgebra();
   if (state.active === "geometry") bindGeometry();
   if (state.active === "functions") bindFunctions();
@@ -184,25 +180,12 @@ function functionsView(): string {
     </section>`;
 }
 
-function tutorView(): string {
-  const topic = sectionMeta[state.active].label;
-  return `<aside class="tutor-dock" id="tutor-dock">
-    <div class="tutor-mark">✦</div><div class="tutor-copy"><p><strong>Tutor contextual</strong><span> · ${topic}</span></p><div class="tutor-response" id="tutor-response"></div></div>
-    <form id="tutor-form"><input id="tutor-input" placeholder="Escribe una duda…" aria-label="Pregunta para el tutor"/><button type="submit" aria-label="Enviar pregunta">↑</button></form>
-    <div class="tutor-suggestions"><button data-tutor-question="Dame una pista">Pista</button><button data-tutor-question="¿Cómo identifico el dominio?">Dominio</button><button data-tutor-question="¿Por qué no existe la inversa?">Inversa</button></div>
-  </aside>`;
-}
-
 function bindNavigation(): void {
   document.querySelectorAll<HTMLButtonElement>("[data-section]").forEach((button) => {
     button.addEventListener("click", () => {
       state.active = button.dataset.section as Section;
-      state.tutorResponse = `Ahora estás en ${sectionMeta[state.active].label}. Describe lo que observas y te daré una pista para empezar.`;
       renderApp();
     });
-  });
-  document.querySelector<HTMLButtonElement>("[data-focus-tutor]")?.addEventListener("click", () => {
-    document.querySelector<HTMLInputElement>("#tutor-input")?.focus();
   });
 }
 
@@ -219,8 +202,6 @@ function bindAlgebra(): void {
       setText("#algebra-prompt", lesson.prompt);
       const steps = document.querySelector<HTMLOListElement>("#algebra-steps");
       if (steps) steps.innerHTML = lesson.steps.map((step) => `<li>${step}</li>`).join("");
-      state.tutorResponse = `Estás explorando ${lesson.title.toLowerCase()}. ${lesson.prompt}`;
-      setText("#tutor-response", state.tutorResponse);
     });
   });
 }
@@ -396,33 +377,6 @@ function renderFunctionPlot(): void {
     inverseCard.innerHTML = `<span class="inverse-status warning">▲ Ajusta la expresión</span><strong>No se pudo graficar</strong><p>${message}</p>`;
     renderPlot(target, { title: "Espera una expresión válida", subtitle: message });
   }
-}
-
-function bindTutor(): void {
-  document.querySelector<HTMLFormElement>("#tutor-form")?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const field = document.querySelector<HTMLInputElement>("#tutor-input");
-    const question = field?.value.trim() ?? "";
-    if (!question) return;
-    state.tutorResponse = tutorAnswer(question);
-    setText("#tutor-response", state.tutorResponse);
-    if (field) field.value = "";
-  });
-  document.querySelectorAll<HTMLButtonElement>("[data-tutor-question]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.tutorResponse = tutorAnswer(button.dataset.tutorQuestion ?? "Dame una pista");
-      setText("#tutor-response", state.tutorResponse);
-    });
-  });
-}
-
-function tutorAnswer(question: string): string {
-  const prompt = question.toLowerCase();
-  if (prompt.includes("dominio")) return "Para el dominio, pregunta: ¿qué valor de x rompe la regla? Evita dividir entre cero y, en raíces pares, exige que el radicando sea ≥ 0. El plano te muestra la parte detectada.";
-  if (prompt.includes("inversa")) return "Intercambia x e y, pero antes aplica la prueba de la recta horizontal: si una horizontal corta la curva dos veces, necesitarás restringir el dominio para que la inversa sea función.";
-  if (state.active === "algebra") return "Pista de álgebra: nombra el patrón antes de calcular. ¿Ves términos semejantes, un producto notable, un factor común o una potencia con la misma base?";
-  if (state.active === "geometry") return "Pista geométrica: cambia un solo parámetro y compara la nueva gráfica con la anterior. Así puedes asociar cada letra de la ecuación con un movimiento, tamaño o apertura.";
-  return `Para f(x) = ${state.expression}, empieza con tres valores de x sencillos y observa cómo cambia y. Luego busca restricciones: denominadores, raíces y la prueba de la recta horizontal.`;
 }
 
 function setNestedState(path: string, value: number): void {

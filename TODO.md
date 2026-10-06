@@ -10,4 +10,4 @@
 - [x] Determinación y señalización visual del dominio y rango de la función graficada.
 - [x] Cálculo y visualización de la función inversa, cuando exista, junto con su reflexión respecto de la recta y = x.
 - [x] Presentación del dominio y rango de la función inversa, incluyendo avisos cuando sea necesario restringir el dominio o la inversa no sea una función.
-- [x] Tutor contextual que interprete preguntas en español y ofrezca pistas o explicaciones adaptadas al tema y al ejercicio que el estudiante esté explorando.
+- [x] Agente de apoyo de Jotform integrado mediante el script oficial proporcionado por el usuario.

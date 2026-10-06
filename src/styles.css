@@ -47,13 +47,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outl
 .orbit-pulse span { width: 4px; height: 4px; display: block; background: var(--mint); border-radius: 50%; box-shadow: 0 0 10px var(--mint); animation: orbitPulse 1.4s infinite ease-in-out; }
 .orbit-pulse span:nth-child(2) { animation-delay: .18s; } .orbit-pulse span:nth-child(3) { animation-delay: .36s; }
 
-.main-column { min-width: 0; padding-bottom: 152px; }
+.main-column { min-width: 0; padding-bottom: 40px; }
 .topbar { height: 73px; display: flex; justify-content: space-between; align-items: center; padding: 0 5.5vw; border-bottom: 1px solid var(--line); background: rgba(8, 16, 31, 0.33); }
 .crumb, .eyebrow { font-family: "DM Mono", monospace; letter-spacing: 0.11em; font-size: 0.67rem; color: var(--muted); }
 .signal-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px var(--mint); margin-right: 7px; }
 .topbar-actions { display: flex; align-items: center; gap: 11px; }
 .progress-chip { color: var(--muted); font-size: 0.75rem; padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; }
 .help-button { color: var(--ink); background: var(--mint); border: 0; border-radius: 999px; font-weight: 700; padding: 8px 12px; box-shadow: 0 0 18px rgba(77,226,197,0.22); }
+.agent-chip { color: var(--mint); border: 1px solid rgba(77,226,197,.35); background: rgba(77,226,197,.08); border-radius: 999px; padding: 7px 10px; font-family: "DM Mono", monospace; font-size: .65rem; }
 .help-button span { margin-left: 3px; }
 .content-area { max-width: 1370px; margin: 0 auto; padding: 45px 5.5vw 32px; }
 .module-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; animation: rise .42s both ease-out; }

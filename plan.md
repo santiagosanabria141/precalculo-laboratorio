@@ -25,7 +25,7 @@ Construir una web educativa en español para estudiantes de precálculo, organiz
 - El plano cartesiano se dibuja con SVG nativo para poder señalar puntos, curvas, dominio/rango y la reflexión `y=x` sin depender de una librería externa.
 - Álgebra y geometría se presentan como módulos de estudio con ejemplos calculables en la misma vista.
 - El graficador acepta expresiones frecuentes (`sin`, `cos`, `tan`, `sqrt`, `abs`, potencias y `x`) mediante un evaluador seguro acotado; muestra dominio/rango estimados a partir del muestreo visible y calcula la inversa por intercambio numérico de pares cuando procede.
-- El tutor contextual usa el tema activo, la expresión y la pregunta escrita para generar pistas locales explicativas en español, sin exigir cuenta ni datos persistentes.
+- El apoyo de IA se integra mediante el agente externo de Jotform proporcionado por el usuario, cargado desde su script oficial de embed; el tutor local se retira para evitar asistentes duplicados.
 
 ## Estructura
 - `index.html`: entrada de la SPA y metadatos.
