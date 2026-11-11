@@ -15,8 +15,9 @@ import {
   type Point,
 } from "./math";
 import { renderPlot, type PlotOptions } from "./plot";
+import { normalizeXRZoom, renderXRScene, type XRCase, type XRParams, type XRSceneState } from "./xr";
 
-type Section = "algebra" | "geometry" | "functions";
+type Section = "algebra" | "geometry" | "functions" | "xr";
 type GeometryMode = "points" | "line" | "circle" | "parabola" | "ellipse" | "hyperbola";
 type AlgebraMode = keyof typeof algebraLessons;
 
@@ -36,6 +37,10 @@ const state = {
   parabola: { a: 0.45, h: 0, k: -3 },
   ellipse: { h: 0, k: 0, a: 6, b: 3 },
   hyperbola: { h: 0, k: 0, a: 3, b: 2 },
+  xrCase: "cylinder" as XRCase,
+  xrParams: { radius: 4, height: 6 } as XRParams,
+  xrScene: { progress: 0, rotation: -0.35, tilt: 0, zoom: 1 } as XRSceneState,
+  xrPlaying: false,
 };
 
 let plotZoom = 1;
@@ -58,6 +63,7 @@ const sectionMeta: Record<Section, { number: string; label: string; description:
   algebra: { number: "01", label: "Álgebra", description: "Manipula símbolos con intención", icon: "∑" },
   geometry: { number: "02", label: "Geometría analítica", description: "Convierte ecuaciones en espacio", icon: "⌁" },
   functions: { number: "03", label: "Funciones", description: "Observa reglas en movimiento", icon: "ƒ" },
+  xr: { number: "04", label: "XR Fusion Math Lab", description: "De 2D a sólidos 3D", icon: "◈" },
 };
 
 const algebraLessons = {
@@ -86,15 +92,6 @@ const algebraLessons = {
     steps: ["Conserva la base x.", "Suma los exponentes: 3 + (−5).", "Reescribe el exponente negativo como recíproco."],
   },
 };
-
-const factorCases = [
-  { id: "factor-comun", title: "Factor común", pattern: "ax + ay = a(x + y)", example: "6x + 9 = 3(2x + 3)", guide: "Extrae el máximo factor que aparece en todos los términos." },
-  { id: "agrupacion", title: "Agrupación de términos", pattern: "ax + ay + bx + by", example: "x² + 3x + 2x + 6 = (x + 3)(x + 2)", guide: "Agrupa términos de dos en dos y busca un factor común en cada grupo." },
-  { id: "tcp", title: "Trinomio cuadrado perfecto", pattern: "a² ± 2ab + b² = (a ± b)²", example: "x² + 6x + 9 = (x + 3)²", guide: "Comprueba que el primero y el último sean cuadrados y que el término central sea ±2ab." },
-  { id: "diferencia-cuadrados", title: "Diferencia de cuadrados", pattern: "a² − b² = (a − b)(a + b)", example: "x² − 25 = (x − 5)(x + 5)", guide: "Identifica dos cuadrados perfectos unidos por una resta." },
-  { id: "trinomio-x2", title: "Trinomio x² + bx + c", pattern: "x² + bx + c = (x + m)(x + n)", example: "x² + 5x + 6 = (x + 2)(x + 3)", guide: "Busca dos números que sumen b y multipliquen c." },
-  { id: "trinomio-ax2", title: "Trinomio ax² + bx + c", pattern: "ax² + bx + c", example: "6x² + 11x + 3 = (3x + 1)(2x + 3)", guide: "Multiplica a·c, descompón el término central y agrupa para factorizar." },
-];
 
 function renderApp(): void {
   if (!hasEntered) {
@@ -130,6 +127,7 @@ function renderApp(): void {
           ${state.active === "algebra" ? algebraView() : ""}
           ${state.active === "geometry" ? geometryView() : ""}
           ${state.active === "functions" ? functionsView() : ""}
+          ${state.active === "xr" ? xrView() : ""}
         </main>
       </div>
     </div>`;
@@ -138,6 +136,7 @@ function renderApp(): void {
   if (state.active === "algebra") bindAlgebra();
   if (state.active === "geometry") bindGeometry();
   if (state.active === "functions") bindFunctions();
+  if (state.active === "xr") bindXR();
 }
 
 function renderCover(): void {
@@ -151,7 +150,7 @@ function renderCover(): void {
         <h1>Entiende las matemáticas<br /><em>cuando puedes verlas.</em></h1>
         <p class="cover-intro">Un espacio interactivo para estudiar álgebra, geometría analítica y funciones con gráficas que responden a cada cambio.</p>
         <div class="cover-modules" aria-label="Módulos disponibles">
-          <span><b>01</b> Álgebra</span><span><b>02</b> Geometría analítica</span><span><b>03</b> Funciones</span>
+          <span><b>01</b> Álgebra</span><span><b>02</b> Geometría analítica</span><span><b>03</b> Funciones</span><span><b>04</b> XR Fusion Math Lab</span>
         </div>
         <button class="cover-enter" id="enter-lab" type="button">Entrar al laboratorio <span>↗</span></button>
         <p class="cover-note">Explora a tu ritmo · modifica · observa · comprende</p>
@@ -178,7 +177,6 @@ function algebraView(): string {
       <button class="concept-chip ${state.algebraMode === "factorizacion" ? "is-selected" : ""}" data-algebra="factorizacion">Factorización</button>
       <button class="concept-chip ${state.algebraMode === "racionalizacion" ? "is-selected" : ""}" data-algebra="racionalizacion">Racionalización</button>
       <button class="concept-chip ${state.algebraMode === "exponentes" ? "is-selected" : ""}" data-algebra="exponentes">Exponentes</button>
-      <button class="concept-chip" data-scroll-algebra-workshop>Taller libre ↓</button>
     </section>
     <section class="algebra-lab">
       <div class="lesson-card glow-card">
@@ -196,22 +194,6 @@ function algebraView(): string {
         <div class="reference-item"><span>(aᵐ)ⁿ = aᵐⁿ</span><p>Potencia de potencia</p></div>
         <div class="rule-note"><strong>Pregunta guía</strong><p>¿Qué patrón puedes nombrar antes de operar?</p></div>
       </aside>
-    </section>
-    <section class="algebra-workshop" id="algebra-workshop">
-      <div class="workshop-card">
-        <div class="workshop-heading"><div><p class="eyebrow">TALLER LIBRE</p><h2>Plantea tu propio ejercicio</h2></div><span class="status-live">● práctica activa</span></div>
-        <p class="workshop-intro">Escribe una operación o una expresión que quieras factorizar. La guía te devolverá una ruta de trabajo para que desarrolles el procedimiento.</p>
-        <form id="algebra-practice-form" class="practice-form">
-          <label><span>TIPO DE EJERCICIO</span><select id="algebra-practice-kind"><option value="operacion">Operación / expresión</option><option value="factorizacion">Factorización</option></select></label>
-          <label class="practice-expression"><span>MI PLANTEAMIENTO</span><input id="algebra-practice-input" autocomplete="off" placeholder="Ej.: 3(2x − 1) + 4x" /></label>
-          <button class="primary-button practice-submit" type="submit">Revisar <span>↗</span></button>
-        </form>
-        <div class="practice-response" id="algebra-practice-response" aria-live="polite">Escribe tu planteamiento y elige una ruta para comenzar.</div>
-      </div>
-      <div class="factor-case-panel">
-        <div class="workshop-heading"><div><p class="eyebrow">GUÍA DE FACTORIZACIÓN</p><h2>Seis patrones para reconocer</h2></div></div>
-        <div class="factor-case-grid">${factorCases.map((item, index) => `<button class="factor-case-item" type="button" data-factor-case="${item.id}"><span class="factor-case-number">0${index + 1}</span><strong>${item.title}</strong><code>${item.pattern}</code><small>${item.example}</small></button>`).join("")}</div>
-      </div>
     </section>`;
 }
 
@@ -249,6 +231,41 @@ function functionsView(): string {
     </section>`;
 }
 
+function xrView(): string {
+  const cases: Array<[XRCase, string, string]> = [["cylinder", "Círculo → Cilindro", "Extrusión"], ["cone", "Triángulo rectángulo → Cono", "Revolución"], ["paraboloid", "Parábola → Paraboloide", "Revolución"]];
+  const isCylinder = state.xrCase === "cylinder";
+  const isCone = state.xrCase === "cone";
+  const formula = isCylinder ? "V = πr²h · A = 2πr(r + h)" : isCone ? "V = ⅓πr²h · A = πr(r + g)" : "V = ½πr²h";
+  const explanation = isCylinder ? "El círculo se extruye a lo largo de una altura. También puede entenderse como la revolución de un rectángulo." : isCone ? "El triángulo rectángulo gira alrededor de uno de sus catetos; la hipotenusa genera la generatriz g." : "Una región acotada bajo la parábola gira alrededor de su eje para formar un sólido de volumen finito.";
+  const label = isCylinder ? "cilindro" : isCone ? "cono" : "paraboloide";
+  return `${hero("MÓDULO 04", "XR Fusion", "Math Lab.", "Observa cómo una figura plana se transforma en un sólido 3D. Modifica sus parámetros y construye la geometría paso a paso.", "2D → 3D")}
+    <section class="xr-shell">
+      <aside class="xr-catalog"><div class="xr-kicker">CATÁLOGO DE TRANSFORMACIONES</div>${cases.map(([id, title, mode]) => `<button class="xr-case ${state.xrCase === id ? "is-active" : ""}" data-xr-case="${id}"><span>${id === "cylinder" ? "○" : id === "cone" ? "△" : "⌁"}</span><strong>${title}</strong><small>${mode}</small></button>`).join("")}<div class="xr-gesture-note"><strong>◉ Gestos experimentales</strong><p>Palma: rotar · pinza: avanzar · dos manos: zoom · puño: reiniciar.</p><button type="button" id="xr-gesture-button">Activar cámara</button><small id="xr-gesture-status">El cálculo y el renderizado los realiza la aplicación.</small></div></aside>
+      <section class="xr-stage"><div class="xr-stage-top"><span class="xr-live-dot">● LIVE TRANSFORM</span><span id="xr-progress-label">${Math.round(state.xrScene.progress * 100)}% construido</span></div><canvas id="xr-canvas" aria-label="Visualización de ${label} 3D"></canvas><div class="xr-controls"><button type="button" id="xr-play">${state.xrPlaying ? "Pausar" : "Animar transformación"}</button><button type="button" id="xr-reset">Reiniciar vista</button><label>Zoom <input id="xr-zoom" type="range" min="0.65" max="2.2" step="0.05" value="${state.xrScene.zoom}" /></label></div></section>
+      <aside class="xr-math"><div class="xr-kicker">FICHA MATEMÁTICA</div><h2>${label}</h2><p class="xr-transform">${isCylinder ? "círculo" : isCone ? "triángulo rectángulo" : "región parabólica"} <span>→</span> ${label}</p><div class="xr-formula">${formula}</div><div class="xr-params"><label>Radio <b id="xr-radius-value">${state.xrParams.radius.toFixed(1)}</b><input id="xr-radius" type="range" min="2" max="7" step="0.5" value="${state.xrParams.radius}" /></label><label>Altura <b id="xr-height-value">${state.xrParams.height.toFixed(1)}</b><input id="xr-height" type="range" min="2" max="9" step="0.5" value="${state.xrParams.height}" /></label></div><p class="xr-explanation">${explanation}</p><ol class="xr-steps"><li>Identifica la figura plana y sus parámetros.</li><li>Aplica extrusión o revolución alrededor del eje.</li><li>Comprueba cómo cambian volumen y área.</li></ol><div class="xr-disclaimer">La cámara y MediaPipe reconocen gestos; la geometría y el renderizado 3D son locales en esta aplicación.</div></aside>
+    </section>`;
+}
+
+function bindXR(): void {
+  const canvas = document.querySelector<HTMLCanvasElement>("#xr-canvas");
+  if (!canvas) return;
+  const draw = () => { renderXRScene(canvas, state.xrCase, state.xrParams, state.xrScene); setText("#xr-progress-label", `${Math.round(state.xrScene.progress * 100)}% construido`); };
+  document.querySelectorAll<HTMLButtonElement>("[data-xr-case]").forEach((button) => button.addEventListener("click", () => { state.xrCase = button.dataset.xrCase as XRCase; state.xrScene.progress = 0; state.xrPlaying = false; renderApp(); }));
+  document.querySelector<HTMLButtonElement>("#xr-play")?.addEventListener("click", () => { state.xrPlaying = !state.xrPlaying; renderApp(); });
+  document.querySelector<HTMLButtonElement>("#xr-reset")?.addEventListener("click", () => { state.xrScene = { progress: 0, rotation: -.35, tilt: 0, zoom: 1 }; state.xrPlaying = false; draw(); setText("#xr-play", "Animar transformación"); });
+  document.querySelector<HTMLInputElement>("#xr-radius")?.addEventListener("input", (event) => { state.xrParams.radius = Number((event.target as HTMLInputElement).value); setText("#xr-radius-value", state.xrParams.radius.toFixed(1)); draw(); });
+  document.querySelector<HTMLInputElement>("#xr-height")?.addEventListener("input", (event) => { state.xrParams.height = Number((event.target as HTMLInputElement).value); setText("#xr-height-value", state.xrParams.height.toFixed(1)); draw(); });
+  document.querySelector<HTMLInputElement>("#xr-zoom")?.addEventListener("input", (event) => { state.xrScene.zoom = normalizeXRZoom(Number((event.target as HTMLInputElement).value)); draw(); });
+  let dragging = false; let lastX = 0; let lastY = 0;
+  canvas.addEventListener("pointerdown", (event) => { dragging = true; lastX = event.clientX; lastY = event.clientY; canvas.setPointerCapture(event.pointerId); });
+  canvas.addEventListener("pointermove", (event) => { if (!dragging) return; state.xrScene.rotation += (event.clientX - lastX) * .012; state.xrScene.tilt += event.clientY - lastY; lastX = event.clientX; lastY = event.clientY; draw(); });
+  canvas.addEventListener("pointerup", () => { dragging = false; });
+  canvas.addEventListener("wheel", (event) => { event.preventDefault(); state.xrScene.zoom = normalizeXRZoom(state.xrScene.zoom - event.deltaY * .001); const zoom = document.querySelector<HTMLInputElement>("#xr-zoom"); if (zoom) zoom.value = String(state.xrScene.zoom); draw(); }, { passive: false });
+  document.querySelector<HTMLButtonElement>("#xr-gesture-button")?.addEventListener("click", () => { setText("#xr-gesture-status", "Modo cámara preparado: concede permiso para activar MediaPipe en tu navegador."); });
+  draw();
+  if (state.xrPlaying) { state.xrScene.progress = Math.min(1, state.xrScene.progress + .012); if (state.xrScene.progress >= 1) state.xrPlaying = false; window.setTimeout(() => { if (state.active === "xr") { renderApp(); } }, 34); }
+}
+
 function bindNavigation(): void {
   document.querySelectorAll<HTMLButtonElement>("[data-section]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -273,38 +290,6 @@ function bindAlgebra(): void {
       if (steps) steps.innerHTML = lesson.steps.map((step) => `<li>${step}</li>`).join("");
     });
   });
-  document.querySelector<HTMLButtonElement>("[data-scroll-algebra-workshop]")?.addEventListener("click", () => {
-    document.querySelector("#algebra-workshop")?.scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  const practiceKind = document.querySelector<HTMLSelectElement>("#algebra-practice-kind");
-  const practiceInput = document.querySelector<HTMLInputElement>("#algebra-practice-input");
-  const practiceResponse = document.querySelector<HTMLElement>("#algebra-practice-response");
-  document.querySelector<HTMLFormElement>("#algebra-practice-form")?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const expression = practiceInput?.value.trim() ?? "";
-    const selectedCase = document.querySelector<HTMLButtonElement>(".factor-case-item.is-selected")?.dataset.factorCase;
-    if (practiceResponse) practiceResponse.textContent = algebraPracticeFeedback(practiceKind?.value ?? "operacion", expression, selectedCase);
-  });
-  document.querySelectorAll<HTMLButtonElement>("[data-factor-case]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const selected = factorCases.find((item) => item.id === button.dataset.factorCase);
-      if (!selected) return;
-      document.querySelectorAll(".factor-case-item").forEach((item) => item.classList.remove("is-selected"));
-      button.classList.add("is-selected");
-      if (practiceKind) practiceKind.value = "factorizacion";
-      if (practiceInput) practiceInput.value = selected.example.split(" = ")[0];
-      if (practiceResponse) practiceResponse.textContent = `${selected.title}: ${selected.guide} Ejemplo de referencia: ${selected.example}. Ahora intenta escribir tu propia expresión.`;
-    });
-  });
-}
-
-function algebraPracticeFeedback(kind: string, expression: string, caseId?: string): string {
-  if (!expression) return "Primero escribe una expresión para que podamos trabajarla juntos.";
-  if (kind === "factorizacion") {
-    const selected = factorCases.find((item) => item.id === caseId) ?? factorCases[0];
-    return `${selected.title}: ${selected.guide} Tu planteamiento «${expression}» queda listo para que identifiques términos, agrupes y compruebes multiplicando los factores.`;
-  }
-  return `Operación recibida: «${expression}». Ruta sugerida: elimina paréntesis, respeta la jerarquía de operaciones, combina términos semejantes y comprueba el resultado sustituyendo un valor sencillo.`;
 }
 
 function bindGeometry(): void {

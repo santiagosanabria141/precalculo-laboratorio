@@ -11,3 +11,6 @@
 - [x] Cálculo y visualización de la función inversa, cuando exista, junto con su reflexión respecto de la recta y = x.
 - [x] Presentación del dominio y rango de la función inversa, incluyendo avisos cuando sea necesario restringir el dominio o la inversa no sea una función.
 - [x] Agente de apoyo de Jotform integrado mediante el script oficial proporcionado por el usuario.
+- [x] Opción XR Fusion Math Lab integrada como cuarto módulo, con catálogo de círculo → cilindro, triángulo rectángulo → cono y parábola acotada → paraboloide.
+- [x] Escena visual 2D→3D con animación de transformación, pausa, reinicio, rotación mediante arrastre, zoom, parámetros de radio y altura, fórmulas y pasos didácticos.
+- [x] Panel de gestos experimentales con explicación de palma, índice, pinza, dos manos y puño; el cálculo geométrico y renderizado permanecen locales en la aplicación.
